@@ -103,11 +103,35 @@ async fn request_sol_airdrop(ctx: &ScillaContext) -> anyhow::Result<()> {
 async fn fetch_acc_data(ctx: &ScillaContext, pubkey: &Pubkey) -> anyhow::Result<()> {
     let acc = ctx.rpc().get_account(pubkey).await?;
 
-    println!(
-        "{}\n{}",
-        style("Account info:").green().bold(),
-        style(format!("{acc:#?}")).cyan()
-    );
+    let mut table = Table::new();
+    table
+        .load_preset(UTF8_FULL)
+        .set_header(vec![
+            Cell::new("Field").add_attribute(comfy_table::Attribute::Bold),
+            Cell::new("Value").add_attribute(comfy_table::Attribute::Bold),
+        ])
+        .add_row(vec![
+            Cell::new("Lamports"),
+            Cell::new(format!("{}", acc.lamports)),
+        ])
+        .add_row(vec![
+            Cell::new("Data Length"),
+            Cell::new(format!("{}", acc.data.len())),
+        ])
+        .add_row(vec![
+            Cell::new("Owner"),
+            Cell::new(format!("{}", acc.owner)),
+        ])
+        .add_row(vec![
+            Cell::new("Executable"),
+            Cell::new(format!("{}", acc.executable)),
+        ])
+        .add_row(vec![
+            Cell::new("Rent Epoch"),
+            Cell::new(format!("{}", acc.rent_epoch)),
+        ]);
+
+    println!("{}\n{}", style("ACCOUNT INFO").green().bold(), table);
 
     Ok(())
 }
