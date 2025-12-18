@@ -3,10 +3,8 @@ use {
         Command, account::AccountCommand, cluster::ClusterCommand, config::ConfigCommand,
         stake::StakeCommand, vote::VoteCommand,
     },
-    ::{
-        inquire::{Select, Text},
-        std::str::FromStr,
-    },
+    inquire::{Select, Text},
+    std::str::FromStr,
 };
 
 pub fn prompt_for_command() -> anyhow::Result<Command> {
