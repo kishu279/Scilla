@@ -95,4 +95,60 @@ impl ScillaConfig {
         let config: ScillaConfig = toml::from_str(&data)?;
         Ok(config)
     }
+
+    pub fn load_from_path(path: &std::path::Path) -> Result<ScillaConfig, ScillaError> {
+        if !path.exists() {
+            return Err(ScillaError::ConfigPathDoesNotExist);
+        }
+        let data = fs::read_to_string(path)?;
+        let config: ScillaConfig = toml::from_str(&data)?;
+        Ok(config)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use {super::*, std::env, tempfile::TempDir};
+
+    #[test]
+    fn test_load_from_path_malformed_toml() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let config_path = temp_dir.path().join("bad.toml");
+
+        // Missing closing quote - invalid TOML
+        fs::write(
+            &config_path,
+            r#"rpc-url = "https://api.mainnet-beta.solana.com"#,
+        )
+        .expect("Failed to write file");
+
+        let result = ScillaConfig::load_from_path(&config_path);
+
+        assert!(matches!(result, Err(ScillaError::TomlParseError(_))));
+    }
+
+    #[test]
+    fn test_load_from_path_valid_config_with_tilde_expansion() {
+        let home = env::home_dir().expect("HOME should be set");
+
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let config_path = temp_dir.path().join("config.toml");
+
+        fs::write(
+            &config_path,
+            r#"
+rpc-url = "https://api.mainnet-beta.solana.com"
+keypair-path = "~/my/key.json"
+commitment-level = "confirmed"
+"#,
+        )
+        .expect("Failed to write file");
+
+        let config = ScillaConfig::load_from_path(&config_path)
+            .expect("Valid config should load successfully");
+
+        assert_eq!(config.rpc_url, "https://api.mainnet-beta.solana.com");
+        assert_eq!(config.commitment_level, CommitmentLevel::Confirmed);
+        assert_eq!(config.keypair_path, home.join("my/key.json"));
+    }
 }
