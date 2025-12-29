@@ -1,6 +1,4 @@
-use std::str::FromStr;
-
-use crate::misc::helpers::sol_to_lamports;
+use crate::{constants::LAMPORTS_PER_SOL};
 
 use {
     crate::{
@@ -21,9 +19,6 @@ use {
     std::fmt,
 };
 
-use solana_sdk::{
-    instruction::{AccountMeta, Instruction}, native_token::sol_str_to_lamports, transaction::Transaction
-};
 
 /// Commands related to wallet or account management
 #[derive(Debug, Clone)]
@@ -78,9 +73,7 @@ impl AccountCommand {
                 show_spinner(self.spinner_msg(), fetch_account_balance(ctx, &pubkey)).await?;
             }
             AccountCommand::Transfer => {
-                let recipient: Pubkey = prompt_data("Enter recipient pubkey:")?;
-                let amount_sol: f64 = prompt_data("Enter amount (in SOL):")?;
-                show_spinner(self.spinner_msg(), transfer(ctx, recipient, amount_sol)).await?; 
+                 // show_spinner(self.spinner_msg(), todo!()).await?;
             }
             AccountCommand::Airdrop => {
                 show_spinner(self.spinner_msg(), request_sol_airdrop(ctx)).await?;
@@ -103,7 +96,7 @@ impl AccountCommand {
 
 async fn request_sol_airdrop(ctx: &ScillaContext) -> anyhow::Result<()> {
     // request exactly 1 sol, not 1 lamport
-    let sig = ctx.rpc().request_airdrop(ctx.pubkey(), sol_to_lamports(1.0)).await;
+    let sig = ctx.rpc().request_airdrop(ctx.pubkey(), LAMPORTS_PER_SOL).await;
     match sig {
         Ok(signature) => {
             println!(
@@ -165,59 +158,6 @@ async fn fetch_account_balance(ctx: &ScillaContext, pubkey: &Pubkey) -> anyhow::
         style("Account balance in SOL:").green().bold(),
         style(format!("{acc_balance:#?}")).cyan()
     );
-
-    Ok(())
-}
-
-fn system_program_id() -> Pubkey {
-    Pubkey::from_str("11111111111111111111111111111111").expect("valid system program id")
-}
-
-fn build_system_transfer_ix(from: Pubkey, to: Pubkey, lamports: u64) -> Instruction {
-    let mut data = Vec::with_capacity(12);
-
-    //system program transfer instruction
-    data.extend_from_slice(&2u32.to_le_bytes());
-    data.extend_from_slice(&lamports.to_le_bytes());
-
-    Instruction {
-        program_id: system_program_id(),
-        accounts: vec![
-            AccountMeta::new(from, true), 
-            AccountMeta::new(to, false), 
-        ],
-        data,
-    }
-}
-
-async fn transfer(ctx: &ScillaContext, recipient: Pubkey, amount_sol: f64) -> anyhow::Result<()> {
-    if amount_sol <= 0.0 {
-        anyhow::bail!("Amount must be > 0");
-    }
-
-    //no precision issues
-    let lamports = sol_str_to_lamports(&amount_sol.to_string()).unwrap();
-
-    let balance = ctx.rpc().get_balance(&ctx.pubkey()).await?;
-    if balance < lamports {
-        anyhow::bail!("Insufficient balance");
-    }
-
-    let ix = build_system_transfer_ix(*ctx.pubkey(), recipient, lamports);
-
-    let blockhash = ctx.rpc().get_latest_blockhash().await?;
-
-    //actual transfer
-    let tx =
-        Transaction::new_signed_with_payer(&[ix], Some(&ctx.pubkey()), &[ctx.keypair()], blockhash);
-
-    let sig = ctx.rpc().send_and_confirm_transaction(&tx).await?;
-
-    println!(
-    "Transferred {} SOL to {}",
-    amount_sol,
-    recipient
-);
 
     Ok(())
 }
