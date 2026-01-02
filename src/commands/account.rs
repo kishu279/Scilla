@@ -2,10 +2,7 @@ use {
     crate::{
         commands::CommandFlow,
         context::ScillaContext,
-        error::ScillaResult,
         misc::helpers::{bincode_deserialize, lamports_to_sol, sol_to_lamports},
-        prompt::prompt_data,
-        misc::helpers::{bincode_deserialize, lamports_to_sol},
         prompt::prompt_input_data,
         ui::{print_error, show_spinner},
     },
