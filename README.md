@@ -126,7 +126,7 @@ Full stake account lifecycle management.
 | **Withdraw**   | Withdraw SOL from deactivated stake | Done   |
 | **Merge**      | Combine two stake accounts          | Done   |
 | **Split**      | Split stake into multiple accounts  | Done   |
-| **Show**       | Display stake account details       | Todo   |
+| **Show**       | Display stake account details       | Done   |
 | **History**    | View stake account history          | Done   |
 
 ---
