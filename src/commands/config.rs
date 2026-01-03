@@ -114,7 +114,7 @@ impl ConfigCommand {
     }
 }
 
-fn show_config(ctx: &mut ScillaContext) -> anyhow::Result<()> {
+fn show_config(ctx: &ScillaContext) -> anyhow::Result<()> {
     let mut table = Table::new();
     let config = ScillaConfig::load()?;
 
