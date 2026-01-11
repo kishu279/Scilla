@@ -354,11 +354,9 @@ async fn fetch_rent(ctx: &ScillaContext, bytes: usize) -> anyhow::Result<()> {
 
     Ok(())
 }
-/// Returns true if ATA exists and was displayed, false if not found
+/// Fetches and displays ATA info, or prompts to create if not found
 async fn get_ata(ctx: &ScillaContext, mint: Pubkey, owner: Pubkey) -> anyhow::Result<()> {
     let ata = get_associated_token_address(&owner, &mint);
-
-    println!("\n{} {}", style("ATA").green().bold(), style(format!("{}", ata)).cyan());
 
     match ctx.rpc().get_account(&ata).await {
         Ok(acc) => {
@@ -394,7 +392,9 @@ async fn get_ata(ctx: &ScillaContext, mint: Pubkey, owner: Pubkey) -> anyhow::Re
                     Cell::new(format!("{}", acc.rent_epoch)),
                 ]);
 
-            println!("{}\n{}", style("ACCOUNT INFO").green().bold(), table);
+            println!("\n{}", style("ASSOCIATED TOKEN ACCOUNT").green().bold());
+            println!("{}", style(format!("Address: {}", ata)).cyan());
+            println!("{table}");
             Ok(())
         }
         Err(_e) => {
@@ -416,24 +416,25 @@ async fn get_ata(ctx: &ScillaContext, mint: Pubkey, owner: Pubkey) -> anyhow::Re
 }
 
 async fn create_ata(ctx: &ScillaContext, mint: Pubkey, owner: Pubkey) -> anyhow::Result<()> {
-    let ata = get_associated_token_address(&mint, &owner);
-    
-    println!("{}", style("ATA created successfully").green().bold());
-    println!("{}", style(format!("ATA: {}", ata)).cyan());
-    println!("{}", style(format!("Fund: {}", ctx.pubkey())).cyan());
+    let ata = get_associated_token_address(&owner, &mint);
 
     let instruction = create_associated_token_account(&ctx.pubkey(), &owner, &mint, &token_program_id());
     let latest_blockhash = ctx.rpc().get_latest_blockhash().await?;
 
     let transaction = Transaction::new_signed_with_payer(
         &[instruction.clone()],
-        Some(&ctx.pubkey()),    
+        Some(&ctx.pubkey()),
         &[&ctx.keypair()],
         latest_blockhash,
     );
 
     let signature = ctx.rpc().send_transaction(&transaction).await?;
 
-    println!("{}", style(format!("Transaction Signature: {}", signature)).yellow());
+    println!(
+        "\n{}\n{}\n{}",
+        style("ATA created successfully!").green().bold(),
+        style(format!("Address: {}", ata)).cyan(),
+        style(format!("Signature: {}", signature)).yellow()
+    );
     Ok(())
 }
